@@ -16,10 +16,14 @@ function runQuery_(sql) {
   // Replace this value with the project ID listed in the Google
   // Cloud Platform project.
   const projectId = 'XXXXXXXX';
+  // Replace this value with the location to run the job
+  // https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#query-parameters
+  const location = 'XXXXXXXX'
 
   const request = {
     query: sql,
-    useLegacySql: false
+    useLegacySql: false,
+    location: location
   };
   let queryResults = BigQuery.Jobs.query(request, projectId);
   const jobId = queryResults.jobReference.jobId;
@@ -29,14 +33,17 @@ function runQuery_(sql) {
   while (!queryResults.jobComplete) {
     Utilities.sleep(sleepTimeMs);
     sleepTimeMs *= 2;
-    queryResults = BigQuery.Jobs.getQueryResults(projectId, jobId);
+    queryResults = BigQuery.Jobs.getQueryResults(projectId, jobId, {
+      location: location
+    });
   }
 
   // Get all the rows of results.
   let rows = queryResults.rows;
   while (queryResults.pageToken) {
     queryResults = BigQuery.Jobs.getQueryResults(projectId, jobId, {
-      pageToken: queryResults.pageToken
+      pageToken: queryResults.pageToken,
+      location: location
     });
     rows = rows.concat(queryResults.rows);
   }
