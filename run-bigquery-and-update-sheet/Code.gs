@@ -1,9 +1,42 @@
-function runBigQueryAndUpdateSheet() {
+let spreadsheet;
+
+function doGet(e) {
+  const spreadsheetId = e.parameter.spreadsheetId; // Get the spreadsheetId from the URL parameters
+  const resultMessage = runBigQueryAndUpdateSheet_(spreadsheetId);
+  return ContentService.createTextOutput(resultMessage);
+}
+
+function setupDailyTrigger() {
+  ScriptApp.newTrigger('processMultipleSpreadsheets')
+      .timeBased()
+      .everyDays(1)
+      .atHour(8)
+      .create();
+}
+
+function processMultipleSpreadsheets() {
+  // Replace this value with the spreadsheet ID that can be found in the URL
+  runBigQueryAndUpdateSheet_('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXX')
+  runBigQueryAndUpdateSheet_('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXX')
+  runBigQueryAndUpdateSheet_('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXX')
+}
+
+function runBigQueryAndUpdateSheet_(spreadsheetId) {
+  const startTime = new Date();
+
+  spreadsheet = SpreadsheetApp.openById(spreadsheetId);
   const sql = getSql_()
   const queryResult = runQuery_(sql)
   clearResultSheet_()
   appendHeader_(queryResult.header)
   appendRows_(queryResult.rows)
+
+  const endTime = new Date();
+  const executionTime = (endTime - startTime) / 1000;
+  const executionTimeString = executionTime.toFixed(3);
+  const resultMessage = `Spreadsheet ID: ${spreadsheetId}, Spreadsheet Name: ${spreadsheet.getName()}, Execution Time: ${executionTimeString} s.`;
+  Logger.log(resultMessage);
+  return resultMessage;
 }
 
 function getSql_() {
@@ -13,8 +46,7 @@ function getSql_() {
 
 // https://developers.google.com/apps-script/advanced/bigquery
 function runQuery_(sql) {
-  // Replace this value with the project ID listed in the Google
-  // Cloud Platform project.
+  // Replace this value with the project ID listed in the Google Cloud Platform project.
   const projectId = 'XXXXXXXX';
   // Replace this value with the location to run the job
   // https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#query-parameters
@@ -83,6 +115,5 @@ function appendRows_(rows) {
 }
 
 function getSheetByName_(sheetName) {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   return spreadsheet.getSheetByName(sheetName);
 }
